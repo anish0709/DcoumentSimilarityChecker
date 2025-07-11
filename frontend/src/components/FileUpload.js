@@ -4,6 +4,28 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
   const [file1, setFile1] = useState(null);
   const [file2, setFile2] = useState(null);
 
+  // Helper function to determine if an algorithm should be disabled
+  const isAlgorithmDisabled = (algorithmId) => {
+    // Disable all semantic options except local ones
+    const disabledAlgorithms = [
+      'semantic',
+      'semantic-embedding', 
+      'semantic-rag',
+      'semantic-llm',
+      'semantic-hf',
+      'semantic-bedrock'
+    ];
+    return disabledAlgorithms.includes(algorithmId);
+  };
+
+  // Helper function to get algorithm display name with disabled indicator
+  const getAlgorithmDisplayName = (algorithm) => {
+    if (isAlgorithmDisabled(algorithm.id)) {
+      return `${algorithm.name} (API Required)`;
+    }
+    return algorithm.name;
+  };
+
   const handleFileChange = (e, setFile) => {
     setFile(e.target.files[0]);
   };
@@ -54,9 +76,24 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
           style={{ padding: '8px', fontSize: 16 }}
         >
           {algorithms.map(alg => (
-            <option key={alg.id} value={alg.id}>{alg.name}</option>
+            <option 
+              key={alg.id} 
+              value={alg.id}
+              disabled={isAlgorithmDisabled(alg.id)}
+              style={{
+                color: isAlgorithmDisabled(alg.id) ? '#999' : '#000',
+                backgroundColor: isAlgorithmDisabled(alg.id) ? '#f5f5f5' : '#fff'
+              }}
+            >
+              {getAlgorithmDisplayName(alg)}
+            </option>
           ))}
         </select>
+        {isAlgorithmDisabled(selectedAlgorithm) && (
+          <div style={{ color: '#dc3545', fontWeight: 'bold', fontSize: 12, marginTop: 5 }}>
+            ⚠️ This option requires API keys and may incur costs. Use local options instead.
+          </div>
+        )}
       </div>
       <button 
         onClick={handleUpload} 

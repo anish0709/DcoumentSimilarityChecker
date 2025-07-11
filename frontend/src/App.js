@@ -24,6 +24,28 @@ function App() {
     }
   };
 
+  // Helper function to determine if an algorithm should be disabled
+  const isAlgorithmDisabled = (algorithmId) => {
+    // Disable all semantic options except local ones
+    const disabledAlgorithms = [
+      'semantic',
+      'semantic-embedding', 
+      'semantic-rag',
+      'semantic-llm',
+      'semantic-hf',
+      'semantic-bedrock'
+    ];
+    return disabledAlgorithms.includes(algorithmId);
+  };
+
+  // Helper function to get algorithm display name with disabled indicator
+  const getAlgorithmDisplayName = (algorithm) => {
+    if (isAlgorithmDisabled(algorithm.id)) {
+      return `${algorithm.name} (API Required)`;
+    }
+    return algorithm.name;
+  };
+
   const handleCompare = async () => {
     setError('');
     setSimilarity(null);
@@ -65,14 +87,27 @@ function App() {
           style={{ padding: '8px', fontSize: 16, width: '100%', marginBottom: 10 }}
         >
           {algorithms.map(alg => (
-            <option key={alg.id} value={alg.id}>
-              {alg.name}
+            <option 
+              key={alg.id} 
+              value={alg.id}
+              disabled={isAlgorithmDisabled(alg.id)}
+              style={{
+                color: isAlgorithmDisabled(alg.id) ? '#999' : '#000',
+                backgroundColor: isAlgorithmDisabled(alg.id) ? '#f5f5f5' : '#fff'
+              }}
+            >
+              {getAlgorithmDisplayName(alg)}
             </option>
           ))}
         </select>
         {algorithms.find(alg => alg.id === selectedAlgorithm) && (
           <div style={{ fontSize: 14, color: '#666', fontStyle: 'italic' }}>
             {algorithms.find(alg => alg.id === selectedAlgorithm).description}
+            {isAlgorithmDisabled(selectedAlgorithm) && (
+              <div style={{ color: '#dc3545', fontWeight: 'bold', marginTop: 5 }}>
+                ⚠️ This option requires API keys and may incur costs. Use local options instead.
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -183,6 +218,20 @@ function App() {
           <p><strong>Jaccard Similarity:</strong> Measures overlap of unique words between documents. Good for general purpose comparison.</p>
           <p><strong>Cosine Similarity (TF-IDF):</strong> Uses term frequency and importance weighting. Better for longer documents and semantic similarity.</p>
           <p><strong>N-gram Similarity:</strong> Compares phrases (3-word sequences). Excellent for detecting paraphrasing and similar sentence structures.</p>
+          <div style={{ marginTop: 15, padding: 15, backgroundColor: '#d4edda', borderRadius: 4, border: '1px solid #c3e6cb' }}>
+            <h4 style={{ color: '#155724', margin: '0 0 10px 0' }}>🚀 Recommended: Local Semantic Options</h4>
+            <p style={{ color: '#155724', margin: 0 }}>
+              <strong>Local semantic algorithms</strong> run completely on your device without any API calls, costs, or rate limits. 
+              They provide high-quality semantic similarity analysis using local AI models.
+            </p>
+          </div>
+          <div style={{ marginTop: 15, padding: 15, backgroundColor: '#f8d7da', borderRadius: 4, border: '1px solid #f5c6cb' }}>
+            <h4 style={{ color: '#721c24', margin: '0 0 10px 0' }}>⚠️ API-Based Options (Disabled)</h4>
+            <p style={{ color: '#721c24', margin: 0 }}>
+              <strong>API-based semantic algorithms</strong> require external API keys (OpenAI, Hugging Face, Amazon Bedrock) and may incur costs. 
+              They are currently disabled to avoid unexpected charges.
+            </p>
+          </div>
         </div>
       </div>
     </div>

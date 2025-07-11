@@ -2,12 +2,12 @@ const { jaccardSimilarity, cosineSimilarity, ngramSimilarity, tokenize } = requi
 const SemanticSimilarityService = require('../utils/semanticSimilarity');
 const HuggingFaceSimilarityService = require('../utils/huggingfaceSimilarity');
 const { bedrockSemanticSimilarity } = require('../utils/bedrockSimilarity');
-const LocalSimilarityService = require('../utils/localSimilarity');
+const LocalSemanticSimilarityService = require('../utils/localSemanticSimilarity');
 
 // Initialize services
 const semanticService = new SemanticSimilarityService();
 const hfService = new HuggingFaceSimilarityService();
-const localService = new LocalSimilarityService();
+const localService = new LocalSemanticSimilarityService();
 
 // Compare documents from JSON body
 exports.compareDocuments = async (req, res) => {
@@ -74,7 +74,11 @@ exports.getAlgorithms = (req, res) => {
       { id: 'semantic-llm', name: 'Semantic LLM Similarity', description: 'Similarity using LLM analysis and reasoning' },
       { id: 'semantic-hf', name: 'Semantic Similarity (Hugging Face)', description: 'Similarity using Hugging Face MiniLM-L6-v2 embeddings' },
       { id: 'semantic-bedrock', name: 'Semantic Similarity (Amazon Bedrock)', description: 'Similarity using Amazon Bedrock Titan Embeddings' },
-      { id: 'semantic-local', name: 'Semantic Similarity (Local)', description: 'Similarity using local MiniLM-L6-v2 model (no API calls, no cost)' }
+      { id: 'semantic-local', name: 'Semantic Similarity (Local)', description: 'Similarity using local MiniLM-L6-v2 model (no API calls, no cost)' },
+      { id: 'semantic-local-embedding', name: 'Semantic Embedding Similarity (Local)', description: 'Local embeddings-based similarity (no API calls, no cost)' },
+      { id: 'semantic-local-rag', name: 'Semantic RAG Similarity (Local)', description: 'RAG-based similarity using local embeddings and vector search (no API calls, no cost)' },
+      { id: 'semantic-local-llm', name: 'Semantic LLM Similarity (Local)', description: 'LLM-like analysis using local embeddings (no API calls, no cost)' },
+      { id: 'semantic-local-combined', name: 'Semantic Combined Similarity (Local)', description: 'Combined local analysis using embeddings, RAG, and LLM-like methods (no API calls, no cost)' }
     ]
   });
 };
@@ -157,6 +161,38 @@ async function compareSemantic(doc1, doc2, algorithm) {
           similarity: localResult.score,
           algorithm: 'Semantic Similarity (Local)',
           details: localResult.details
+        };
+      
+      case 'semantic-local-embedding':
+        const localEmbeddingResult = await localService.calculateSemanticSimilarity(doc1, doc2);
+        return {
+          similarity: localEmbeddingResult.score,
+          algorithm: 'Semantic Embedding Similarity (Local)',
+          details: localEmbeddingResult.details
+        };
+      
+      case 'semantic-local-rag':
+        const localRAGResult = await localService.calculateRAGSimilarity(doc1, doc2);
+        return {
+          similarity: localRAGResult.score,
+          algorithm: 'Semantic RAG Similarity (Local)',
+          details: localRAGResult.details
+        };
+      
+      case 'semantic-local-llm':
+        const localLLMResult = await localService.calculateLLMSimilarity(doc1, doc2);
+        return {
+          similarity: localLLMResult.score,
+          algorithm: 'Semantic LLM Similarity (Local)',
+          details: localLLMResult.details
+        };
+      
+      case 'semantic-local-combined':
+        const localCombinedResult = await localService.calculateCombinedSimilarity(doc1, doc2);
+        return {
+          similarity: localCombinedResult.score,
+          algorithm: localCombinedResult.algorithmName,
+          details: localCombinedResult.details
         };
       
       case 'semantic':
