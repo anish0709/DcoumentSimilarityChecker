@@ -11,12 +11,13 @@ class HuggingFaceSimilarityService {
   async getEmbeddings(text) {
     const response = await axios.post(
       this.apiUrl,
-      { inputs: text },
+      { inputs: [text] }, // Send as array
       {
         headers: { Authorization: `Bearer ${this.apiKey}` }
       }
     );
-    return response.data.embedding;
+    // The API returns an array of arrays, so return the first embedding
+    return response.data[0];
   }
 
   // Cosine similarity between two vectors
