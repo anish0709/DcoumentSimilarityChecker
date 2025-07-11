@@ -1,8 +1,10 @@
 const { jaccardSimilarity, cosineSimilarity, ngramSimilarity, tokenize } = require('../utils/similarity');
 const SemanticSimilarityService = require('../utils/semanticSimilarity');
+const HuggingFaceSimilarityService = require('../utils/huggingfaceSimilarity');
 
 // Initialize OpenAI semantic similarity service
 const semanticService = new SemanticSimilarityService();
+const hfService = new HuggingFaceSimilarityService();
 
 // Compare documents from JSON body
 exports.compareDocuments = async (req, res) => {
@@ -66,7 +68,8 @@ exports.getAlgorithms = (req, res) => {
       { id: 'semantic', name: 'Semantic Similarity (Combined)', description: 'AI-powered similarity using embeddings, FAISS, and LLM analysis' },
       { id: 'semantic-embedding', name: 'Semantic Embedding Similarity', description: 'Similarity using OpenAI embeddings only' },
       { id: 'semantic-rag', name: 'Semantic RAG Similarity', description: 'Similarity using FAISS vector search and retrieval' },
-      { id: 'semantic-llm', name: 'Semantic LLM Similarity', description: 'Similarity using LLM analysis and reasoning' }
+      { id: 'semantic-llm', name: 'Semantic LLM Similarity', description: 'Similarity using LLM analysis and reasoning' },
+      { id: 'semantic-hf', name: 'Semantic Similarity (Hugging Face)', description: 'Similarity using Hugging Face MiniLM-L6-v2 embeddings' }
     ]
   });
 };
@@ -104,6 +107,13 @@ function compare(doc1, doc2, algorithm) {
 async function compareSemantic(doc1, doc2, algorithm) {
   try {
     switch (algorithm.toLowerCase()) {
+      case 'semantic-hf':
+        const hfResult = await hfService.calculateSemanticSimilarity(doc1, doc2);
+        return {
+          similarity: hfResult.score,
+          algorithm: 'Semantic Similarity (Hugging Face)',
+          details: hfResult.details
+        };
       case 'semantic-embedding':
         const embeddingResult = await semanticService.calculateSemanticSimilarity(doc1, doc2);
         return {
