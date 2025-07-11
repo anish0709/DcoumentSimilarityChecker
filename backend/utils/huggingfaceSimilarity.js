@@ -13,7 +13,10 @@ class HuggingFaceSimilarityService {
       this.apiUrl,
       { inputs: [text] }, // Send as array
       {
-        headers: { Authorization: `Bearer ${this.apiKey}` }
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'x-task': 'feature-extraction'
+        }
       }
     );
     // The API returns an array of arrays, so return the first embedding
