@@ -49,7 +49,16 @@ class LocalSemanticSimilarityService {
       const output = await this.extractor(safeText);
       console.log('Extractor output:', output);
       let tensor;
-      if (Array.isArray(output)) {
+      if (output && output.data && output.dims) {
+        // output is a Tensor object from transformers.js
+        const [batch, numTokens, embeddingDim] = output.dims;
+        // Usually batch=1, so shape is [1, N, 384]
+        const arr = Array.from(output.data);
+        tensor = [];
+        for (let i = 0; i < numTokens; i++) {
+          tensor.push(arr.slice(i * embeddingDim, (i + 1) * embeddingDim));
+        }
+      } else if (Array.isArray(output)) {
         tensor = output;
       } else if (output && Array.isArray(output.data)) {
         tensor = output.data;
