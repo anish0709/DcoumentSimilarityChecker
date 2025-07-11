@@ -6,7 +6,7 @@ const compareRoutes = require('./routes/compareRoutes');
 
 const app = express();
 app.use(cors({
-  origin: 'https://documentsimilaritychecker-1.onrender.com'
+  origin: 'https://dcoumentsimilaritychecker-1.onrender.com'
 }));
 app.use(bodyParser.json({ limit: '2mb' }));
 
