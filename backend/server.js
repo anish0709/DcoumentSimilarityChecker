@@ -5,7 +5,9 @@ const bodyParser = require('body-parser');
 const compareRoutes = require('./routes/compareRoutes');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://documentsimilaritychecker-1.onrender.com'
+}));
 app.use(bodyParser.json({ limit: '2mb' }));
 
 // Use organized routes
