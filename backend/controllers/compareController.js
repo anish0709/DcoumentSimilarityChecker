@@ -2,10 +2,12 @@ const { jaccardSimilarity, cosineSimilarity, ngramSimilarity, tokenize } = requi
 const SemanticSimilarityService = require('../utils/semanticSimilarity');
 const HuggingFaceSimilarityService = require('../utils/huggingfaceSimilarity');
 const { bedrockSemanticSimilarity } = require('../utils/bedrockSimilarity');
+const LocalSimilarityService = require('../utils/localSimilarity');
 
-// Initialize OpenAI semantic similarity service
+// Initialize services
 const semanticService = new SemanticSimilarityService();
 const hfService = new HuggingFaceSimilarityService();
+const localService = new LocalSimilarityService();
 
 // Compare documents from JSON body
 exports.compareDocuments = async (req, res) => {
@@ -71,7 +73,8 @@ exports.getAlgorithms = (req, res) => {
       { id: 'semantic-rag', name: 'Semantic RAG Similarity', description: 'Similarity using FAISS vector search and retrieval' },
       { id: 'semantic-llm', name: 'Semantic LLM Similarity', description: 'Similarity using LLM analysis and reasoning' },
       { id: 'semantic-hf', name: 'Semantic Similarity (Hugging Face)', description: 'Similarity using Hugging Face MiniLM-L6-v2 embeddings' },
-      { id: 'semantic-bedrock', name: 'Semantic Similarity (Amazon Bedrock)', description: 'Similarity using Amazon Bedrock Titan Embeddings' }
+      { id: 'semantic-bedrock', name: 'Semantic Similarity (Amazon Bedrock)', description: 'Similarity using Amazon Bedrock Titan Embeddings' },
+      { id: 'semantic-local', name: 'Semantic Similarity (Local)', description: 'Similarity using local MiniLM-L6-v2 model (no API calls, no cost)' }
     ]
   });
 };
@@ -146,6 +149,14 @@ async function compareSemantic(doc1, doc2, algorithm) {
           similarity: bedrockScore,
           algorithm: 'Semantic Similarity (Amazon Bedrock)',
           details: { method: 'Amazon Bedrock Titan Embeddings' }
+        };
+      
+      case 'semantic-local':
+        const localResult = await localService.calculateSemanticSimilarity(doc1, doc2);
+        return {
+          similarity: localResult.score,
+          algorithm: 'Semantic Similarity (Local)',
+          details: localResult.details
         };
       
       case 'semantic':
