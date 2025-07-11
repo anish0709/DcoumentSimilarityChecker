@@ -47,7 +47,17 @@ class LocalSemanticSimilarityService {
       // Truncate to 256 words or 1000 characters
       const safeText = text.split(/\s+/).slice(0, 256).join(' ').slice(0, 1000);
       const output = await this.extractor(safeText);
-      const tensor = output.data;
+      console.log('Extractor output:', output);
+      let tensor;
+      if (Array.isArray(output)) {
+        tensor = output;
+      } else if (output && Array.isArray(output.data)) {
+        tensor = output.data;
+      } else if (output && typeof output.tolist === 'function') {
+        tensor = output.tolist();
+      } else {
+        throw new Error('Unknown output format from extractor');
+      }
       if (!tensor || tensor.length === 0) throw new Error('Empty embedding returned from model');
       const embedding = tensor[0].map((_, i) =>
         tensor.map(row => row[i]).reduce((a, b) => a + b, 0) / tensor.length
