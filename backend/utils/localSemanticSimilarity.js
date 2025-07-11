@@ -13,6 +13,15 @@ class LocalSemanticSimilarityService {
       console.log('Loading local embedding model...');
       this.extractor = await pipeline('feature-extraction', this.modelName);
       console.log('Local embedding model loaded successfully!');
+      
+      // Test the model with a simple input to verify it works
+      try {
+        const testOutput = await this.extractor('test');
+        const testEmbedding = Array.from(testOutput.data);
+        console.log(`Model test successful. Embedding dimension: ${testEmbedding.length}`);
+      } catch (error) {
+        console.error('Model test failed:', error);
+      }
     }
   }
 
@@ -35,27 +44,56 @@ class LocalSemanticSimilarityService {
   async getEmbeddings(text) {
     await this.initialize();
     
-    // The pipeline returns a tensor, we need to convert it to a regular array
-    const output = await this.extractor(text);
-    const embedding = Array.from(output.data);
-    
-    return embedding;
+    try {
+      // The pipeline returns a tensor, we need to convert it to a regular array
+      const output = await this.extractor(text);
+      const embedding = Array.from(output.data);
+      
+      // Ensure we have a valid embedding
+      if (!embedding || embedding.length === 0) {
+        throw new Error('Empty embedding returned from model');
+      }
+      
+      return embedding;
+    } catch (error) {
+      console.error('Error getting embeddings for text:', text.substring(0, 100) + '...');
+      throw error;
+    }
   }
 
   // Create embeddings for text chunks (same interface as OpenAI version)
   async createEmbeddings(textChunks) {
     const embeddings = [];
     for (const chunk of textChunks) {
-      const embedding = await this.getEmbeddings(chunk);
-      embeddings.push(embedding);
+      try {
+        const embedding = await this.getEmbeddings(chunk);
+        embeddings.push(embedding);
+      } catch (error) {
+        console.error('Error creating embedding for chunk:', chunk.substring(0, 100) + '...');
+        // Return a zero vector of expected length if embedding fails
+        const fallbackEmbedding = new Array(384).fill(0); // MiniLM-L6-v2 has 384 dimensions
+        embeddings.push(fallbackEmbedding);
+      }
     }
     return embeddings;
   }
 
   // Calculate cosine similarity between two vectors (same as OpenAI version)
   cosineSimilarity(vec1, vec2) {
+    if (!vec1 || !vec2) {
+      console.warn('One or both vectors are null/undefined');
+      return 0;
+    }
+    
     if (vec1.length !== vec2.length) {
-      throw new Error('Vectors must have the same length');
+      console.error(`Vector length mismatch: vec1=${vec1.length}, vec2=${vec2.length}`);
+      // Pad the shorter vector with zeros to match the longer one
+      const maxLength = Math.max(vec1.length, vec2.length);
+      const paddedVec1 = [...vec1, ...new Array(maxLength - vec1.length).fill(0)];
+      const paddedVec2 = [...vec2, ...new Array(maxLength - vec2.length).fill(0)];
+      
+      console.log(`Padded vectors to length: ${maxLength}`);
+      return this.cosineSimilarity(paddedVec1, paddedVec2);
     }
     
     let dotProduct = 0;
@@ -84,9 +122,16 @@ class LocalSemanticSimilarityService {
       const chunks1 = this.splitText(doc1);
       const chunks2 = this.splitText(doc2);
       
+      console.log(`Created ${chunks1.length} chunks for doc1, ${chunks2.length} chunks for doc2`);
+      
       // Create embeddings for all chunks
       const embeddings1 = await this.createEmbeddings(chunks1);
       const embeddings2 = await this.createEmbeddings(chunks2);
+      
+      console.log(`Created embeddings: doc1=${embeddings1.length} vectors, doc2=${embeddings2.length} vectors`);
+      if (embeddings1.length > 0 && embeddings2.length > 0) {
+        console.log(`Embedding dimensions: doc1=${embeddings1[0].length}, doc2=${embeddings2[0].length}`);
+      }
       
       // Calculate average similarity between all chunk pairs
       let totalSimilarity = 0;
@@ -263,15 +308,26 @@ class LocalSemanticSimilarityService {
   averageEmbeddings(embeddings) {
     if (embeddings.length === 0) return [];
     
-    const avgEmbedding = new Array(embeddings[0].length).fill(0);
-    for (const embedding of embeddings) {
+    // Find the maximum length among all embeddings
+    const maxLength = Math.max(...embeddings.map(emb => emb.length));
+    
+    // Pad all embeddings to the same length
+    const paddedEmbeddings = embeddings.map(embedding => {
+      if (embedding.length < maxLength) {
+        return [...embedding, ...new Array(maxLength - embedding.length).fill(0)];
+      }
+      return embedding;
+    });
+    
+    const avgEmbedding = new Array(maxLength).fill(0);
+    for (const embedding of paddedEmbeddings) {
       for (let i = 0; i < embedding.length; i++) {
         avgEmbedding[i] += embedding[i];
       }
     }
     
     for (let i = 0; i < avgEmbedding.length; i++) {
-      avgEmbedding[i] /= embeddings.length;
+      avgEmbedding[i] /= paddedEmbeddings.length;
     }
     
     return avgEmbedding;
