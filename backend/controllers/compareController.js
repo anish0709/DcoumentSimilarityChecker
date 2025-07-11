@@ -1,0 +1,144 @@
+const { jaccardSimilarity, cosineSimilarity, ngramSimilarity, tokenize } = require('../utils/similarity');
+const SemanticSimilarityService = require('../utils/semanticSimilarity');
+
+// Initialize OpenAI semantic similarity service
+const semanticService = new SemanticSimilarityService();
+
+// Compare documents from JSON body
+exports.compareDocuments = async (req, res) => {
+  try {
+    const { doc1, doc2, algorithm = 'jaccard' } = req.body;
+    if (!doc1 || !doc2) {
+      return res.status(400).json({ error: 'Both documents required' });
+    }
+
+    // Check if semantic algorithm is requested
+    if (algorithm.startsWith('semantic')) {
+      const result = await compareSemantic(doc1, doc2, algorithm);
+      return res.json(result);
+    }
+
+    // Use traditional text-based methods
+    const { score, algorithmName, details } = compare(doc1, doc2, algorithm);
+    res.json({ similarity: score, algorithm: algorithmName, details });
+  } catch (error) {
+    console.error('Error in compareDocuments:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+};
+
+// Compare uploaded files
+exports.compareFiles = async (req, res) => {
+  try {
+    const file1 = req.files && req.files.file1 && req.files.file1[0];
+    const file2 = req.files && req.files.file2 && req.files.file2[0];
+    const algorithm = req.body.algorithm || 'jaccard';
+    
+    if (!file1 || !file2) {
+      return res.status(400).json({ error: 'Both files required' });
+    }
+    
+    const doc1 = file1.buffer.toString('utf-8');
+    const doc2 = file2.buffer.toString('utf-8');
+
+    // Check if semantic algorithm is requested
+    if (algorithm.startsWith('semantic')) {
+      const result = await compareSemantic(doc1, doc2, algorithm);
+      return res.json(result);
+    }
+
+    // Use traditional text-based methods
+    const { score, algorithmName, details } = compare(doc1, doc2, algorithm);
+    res.json({ similarity: score, algorithm: algorithmName, details });
+  } catch (error) {
+    console.error('Error in compareFiles:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+};
+
+// Get available algorithms
+exports.getAlgorithms = (req, res) => {
+  res.json({
+    algorithms: [
+      { id: 'jaccard', name: 'Jaccard Similarity', description: 'Set-based similarity using word overlap' },
+      { id: 'cosine', name: 'Cosine Similarity (TF-IDF)', description: 'Vector-based similarity using term frequency' },
+      { id: 'ngram', name: 'N-gram Similarity', description: 'Phrase-based similarity using 3-word sequences' },
+      { id: 'semantic', name: 'Semantic Similarity (Combined)', description: 'AI-powered similarity using embeddings, FAISS, and LLM analysis' },
+      { id: 'semantic-embedding', name: 'Semantic Embedding Similarity', description: 'Similarity using OpenAI embeddings only' },
+      { id: 'semantic-rag', name: 'Semantic RAG Similarity', description: 'Similarity using FAISS vector search and retrieval' },
+      { id: 'semantic-llm', name: 'Semantic LLM Similarity', description: 'Similarity using LLM analysis and reasoning' }
+    ]
+  });
+};
+
+// Core comparison logic for traditional methods
+function compare(doc1, doc2, algorithm) {
+  let score;
+  let algorithmName;
+  switch (algorithm.toLowerCase()) {
+    case 'cosine':
+      score = cosineSimilarity(doc1, doc2);
+      algorithmName = 'Cosine Similarity (TF-IDF)';
+      break;
+    case 'ngram':
+      score = ngramSimilarity(doc1, doc2);
+      algorithmName = 'N-gram Similarity';
+      break;
+    case 'jaccard':
+    default:
+      score = jaccardSimilarity(doc1, doc2);
+      algorithmName = 'Jaccard Similarity';
+      break;
+  }
+  return {
+    score,
+    algorithmName,
+    details: {
+      doc1Words: tokenize(doc1).length,
+      doc2Words: tokenize(doc2).length
+    }
+  };
+}
+
+// Semantic comparison logic
+async function compareSemantic(doc1, doc2, algorithm) {
+  try {
+    switch (algorithm.toLowerCase()) {
+      case 'semantic-embedding':
+        const embeddingResult = await semanticService.calculateSemanticSimilarity(doc1, doc2);
+        return {
+          similarity: embeddingResult.score,
+          algorithm: 'Semantic Embedding Similarity',
+          details: embeddingResult.details
+        };
+      
+      case 'semantic-rag':
+        const ragResult = await semanticService.calculateRAGSimilarity(doc1, doc2);
+        return {
+          similarity: ragResult.score,
+          algorithm: 'Semantic RAG Similarity',
+          details: ragResult.details
+        };
+      
+      case 'semantic-llm':
+        const llmResult = await semanticService.calculateLLMSimilarity(doc1, doc2);
+        return {
+          similarity: llmResult.score,
+          algorithm: 'Semantic LLM Similarity',
+          details: llmResult.details
+        };
+      
+      case 'semantic':
+      default:
+        const combinedResult = await semanticService.calculateCombinedSimilarity(doc1, doc2);
+        return {
+          similarity: combinedResult.score,
+          algorithm: combinedResult.algorithmName,
+          details: combinedResult.details
+        };
+    }
+  } catch (error) {
+    console.error('Error in semantic comparison:', error);
+    throw error;
+  }
+} 
