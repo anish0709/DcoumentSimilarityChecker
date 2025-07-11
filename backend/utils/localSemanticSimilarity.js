@@ -44,17 +44,17 @@ class LocalSemanticSimilarityService {
   async getEmbeddings(text) {
     await this.initialize();
     try {
-      // The pipeline returns a 2D tensor: [num_tokens, embedding_dim]
-      const output = await this.extractor(text);
-      const tensor = output.data; // 2D array: [num_tokens, embedding_dim]
+      // Truncate to 256 words or 1000 characters
+      const safeText = text.split(/\s+/).slice(0, 256).join(' ').slice(0, 1000);
+      const output = await this.extractor(safeText);
+      const tensor = output.data;
       if (!tensor || tensor.length === 0) throw new Error('Empty embedding returned from model');
-      // Average across tokens to get a single embedding
       const embedding = tensor[0].map((_, i) =>
         tensor.map(row => row[i]).reduce((a, b) => a + b, 0) / tensor.length
       );
       return embedding;
     } catch (error) {
-      console.error('Error getting embeddings for text:', text.substring(0, 100) + '...');
+      console.error('Error getting embeddings for text:', text.substring(0, 100) + '...', error.message);
       throw error;
     }
   }
