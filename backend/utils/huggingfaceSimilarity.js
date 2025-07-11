@@ -4,7 +4,7 @@ require('dotenv').config();
 class HuggingFaceSimilarityService {
   constructor() {
     this.apiKey = process.env.HUGGINGFACE_API_KEY;
-    this.apiUrl = 'https://api-inference.huggingface.co/embeddings/sentence-transformers/all-MiniLM-L6-v2';
+    this.apiUrl = 'https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2';
   }
 
   // Get embeddings from Hugging Face Inference API
