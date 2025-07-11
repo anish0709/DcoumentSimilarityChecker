@@ -21,7 +21,7 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
     formData.append('file2', file2);
     formData.append('algorithm', selectedAlgorithm);
     try {
-      const res = await fetch('http://localhost:5000/api/compare-files', {
+      const res = await fetch('https://dcoumentsimilaritychecker.onrender.com/api/compare-files', {
         method: 'POST',
         body: formData,
       });
