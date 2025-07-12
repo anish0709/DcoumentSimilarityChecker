@@ -30,9 +30,27 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
     setFile(e.target.files[0]);
   };
 
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
+  const validateFile = (file) => {
+    if (!file) return false;
+    if (!file.name.endsWith('.txt')) {
+      onError('Only .txt files are supported.');
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      onError('File size must be less than 2MB.');
+      return false;
+    }
+    return true;
+  };
+
   const handleUpload = async () => {
     if (!file1 || !file2) {
       onError('Please select both files.');
+      return;
+    }
+    if (!validateFile(file1) || !validateFile(file2)) {
       return;
     }
     setLoading(true);
@@ -49,7 +67,14 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
       });
       const data = await res.json();
       if (res.ok) {
-        onResult(data);
+        // Check if backend says no text found
+        if (data.error && data.error.toLowerCase().includes('no text')) {
+          onError('No text found in one or both documents. Please upload valid .txt files with text content.');
+        } else {
+          onResult(data);
+        }
+      } else if (res.status >= 400 && res.status < 500) {
+        onError(data.error || 'Invalid file(s) or no text found in document.');
       } else {
         onError(data.error || 'Error comparing files');
       }
@@ -63,6 +88,9 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
   return (
     <div style={{ marginTop: 30, padding: 20, background: '#f4f4f4', borderRadius: 8, maxWidth: 400, width: '100%', boxSizing: 'border-box' }}>
       <h3>Compare by Uploading Files</h3>
+      <div style={{ color: '#555', fontSize: 13, marginBottom: 10 }}>
+        Only <b>.txt</b> files are supported. Maximum file size: <b>2MB</b>.
+      </div>
       <div style={{ marginBottom: 10 }}>
         <input type="file" accept=".txt" onChange={e => handleFileChange(e, setFile1)} />
       </div>

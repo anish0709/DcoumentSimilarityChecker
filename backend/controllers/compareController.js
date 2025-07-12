@@ -46,6 +46,11 @@ exports.compareFiles = async (req, res) => {
     const doc1 = file1.buffer.toString('utf-8');
     const doc2 = file2.buffer.toString('utf-8');
 
+    // Check for empty or non-text documents
+    if (!doc1.trim() || !doc2.trim()) {
+      return res.status(400).json({ error: 'No text found in one or both documents.' });
+    }
+
     // Check if semantic algorithm is requested
     if (algorithm.startsWith('semantic')) {
       const result = await compareSemantic(doc1, doc2, algorithm);
