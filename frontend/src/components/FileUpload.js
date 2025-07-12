@@ -61,7 +61,7 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
   };
 
   return (
-    <div style={{ marginTop: 30, padding: 20, background: '#f4f4f4', borderRadius: 8 }}>
+    <div style={{ marginTop: 30, padding: 20, background: '#f4f4f4', borderRadius: 8, maxWidth: 400, width: '100%', boxSizing: 'border-box' }}>
       <h3>Compare by Uploading Files</h3>
       <div style={{ marginBottom: 10 }}>
         <input type="file" accept=".txt" onChange={e => handleFileChange(e, setFile1)} />
@@ -69,11 +69,11 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
       <div style={{ marginBottom: 10 }}>
         <input type="file" accept=".txt" onChange={e => handleFileChange(e, setFile2)} />
       </div>
-      <div style={{ marginBottom: 10 }}>
+      <div style={{ marginBottom: 10, width: '100%' }}>
         <select 
           value={selectedAlgorithm} 
           onChange={e => setSelectedAlgorithm(e.target.value)}
-          style={{ padding: '8px', fontSize: 16 }}
+          style={{ padding: '8px', fontSize: 16, width: '100%', boxSizing: 'border-box' }}
         >
           {algorithms.map(alg => (
             <option 
@@ -98,10 +98,24 @@ function FileUpload({ algorithms, selectedAlgorithm, setSelectedAlgorithm, onRes
       <button 
         onClick={handleUpload} 
         disabled={loading || !file1 || !file2}
-        style={{ padding: '10px 20px', fontSize: 16 }}
+        style={{ padding: '10px 20px', fontSize: 16, width: '100%', boxSizing: 'border-box' }}
       >
         {loading ? 'Comparing...' : 'Compare Files'}
       </button>
+      <style>{`
+        @media (max-width: 480px) {
+          div[style*='background: #f4f4f4'] {
+            padding: 10px !important;
+            font-size: 14px !important;
+          }
+          select {
+            font-size: 14px !important;
+          }
+          button {
+            font-size: 14px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
